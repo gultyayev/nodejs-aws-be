@@ -7,6 +7,7 @@ import {ProductDto} from "@libs/dtos/product.dto";
 
 const getOne: Handler<APIGatewayEvent> = (event, context) => {
   return tryCatch(async () => {
+    console.log("Get product with event", event);
     context.callbackWaitsForEmptyEventLoop = false
     const {id} = event.pathParameters;
 
