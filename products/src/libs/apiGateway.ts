@@ -50,7 +50,7 @@ export const formatJSONResponse = (response: any) => {
 
 export async function tryCatch(cb: () => Promise<APIGatewayProxyResult>): Promise<APIGatewayProxyResult> {
     try {
-        return cb()
+        return await cb()
     } catch (err) {
         console.error(err);
         return {
