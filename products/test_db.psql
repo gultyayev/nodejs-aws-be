@@ -1,0 +1,42 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE products (
+	id uuid DEFAULT uuid_generate_v4(),
+	title varchar(255) NOT NULL,
+	description varchar(1000),
+	price integer
+);
+
+ALTER TABLE products ADD CONSTRAINT uniquectm_const UNIQUE (id);
+
+CREATE TABLE stocks (
+	product_id uuid NOT NULL,
+	count integer NOT NULL,
+	CONSTRAINT fk_product_id
+		FOREIGN KEY(product_id)
+			REFERENCES products(id)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
+);
+
+ALTER TABLE products ADD COLUMN img_src varchar(500);
+
+INSERT INTO products (title, description, price, img_src) VALUES
+	('Cyberpunk 2077', 'Cyberpunk 2077 — приключенческая ролевая игра, действие которой происходит в мегаполисе Найт-Сити, где власть, роскошь и модификации тела ценятся выше всего. Вы играете за V, наёмника в поисках устройства, позволяющего обрести бессмертие.', 29.99, 'https://cdn.akamai.steamstatic.com/steam/apps/1091500/header.jpg?t=1615811936'),
+	('The Long Dark', 'The Long Dark - это исследовательская игра-симулятор выживания, в которой игроки-одиночки должны позаботиться о себе в ходе изучения обширных морозных необитаемых территорий, переживших геомагнитную катастрофу.', 4.99, 'https://cdn.akamai.steamstatic.com/steam/apps/305620/header.jpg?t=1610487837'),
+	('DOOM Eternal', 'Армии ада вторглись на Землю. Станьте Палачом Рока и убейте демонов во всех измерениях, чтобы спасти человечество. Они боятся только… тебя.', 20, 'https://cdn.akamai.steamstatic.com/steam/apps/782330/header.jpg?t=1616080865'),
+	('Sid Meier’s Civilization® VI', 'Сыграйте за одного из 20 лидеров – например за Петра Великого, российского императора.', 15, 'https://cdn.akamai.steamstatic.com/steam/apps/289070/header_russian.jpg?t=1616688275'),
+	('DARK SOULS™ III', 'Dark Souls продолжит испытывать игроков на прочность в новой главе знаменитой серии, собравшей множество наград и определившей лицо жанра. Соберитесь с духом и погрузитесь во тьму!', 30, 'https://cdn.akamai.steamstatic.com/steam/apps/374320/header.jpg?t=1608544497'),
+	('Metro 2033 Redux', 'In 2013 the world was devastated by an apocalyptic event, annihilating almost all mankind and turning the Earth''s surface into a poisonous wasteland. A handful of survivors took refuge in the depths of the Moscow underground, and human civilization entered a new Dark Age. The year is 2033.', 10, 'https://cdn.akamai.steamstatic.com/steam/apps/286690/header.jpg?t=1600354146');
+
+-- Populate stocks table with random values
+DO $$
+DECLARE
+	temprow record;
+BEGIN
+FOR temprow IN
+		SELECT id FROM products
+	LOOP
+		INSERT INTO stocks (product_id, count) VALUES (temprow.id, (SELECT floor(random() * 10 + 1)::int));
+	END LOOP;
+END; $$

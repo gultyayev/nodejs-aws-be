@@ -4,7 +4,11 @@ import type {FromSchema} from "json-schema-to-ts";
 type ValidatedAPIGatewayProxyEvent<S> = Omit<APIGatewayProxyEvent, 'body'> & { body: FromSchema<S> }
 export type ValidatedEventAPIGatewayProxyEvent<S> = Handler<ValidatedAPIGatewayProxyEvent<S>, APIGatewayProxyResult>
 
-export class ResponseBuilder<T> {
+interface ErrorResponseBody {
+    error?: string;
+}
+
+export class ResponseBuilder<T = ErrorResponseBody> {
     #response: APIGatewayProxyResult = {
         body: null,
         statusCode: 200,
@@ -46,7 +50,7 @@ export const formatJSONResponse = (response: any) => {
 
 export async function tryCatch(cb: () => Promise<APIGatewayProxyResult>): Promise<APIGatewayProxyResult> {
     try {
-        return cb()
+        return await cb()
     } catch (err) {
         console.error(err);
         return {
