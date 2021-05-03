@@ -44,7 +44,7 @@ export class ResponseBuilder<T = ErrorResponseBody> {
   }
 }
 
-export async function tryCatch(cb: () => Promise<APIGatewayProxyResult>): Promise<APIGatewayProxyResult> {
+export async function tryCatch(cb: () => Promise<any>): Promise<any> {
   try {
     return await cb()
   } catch (err) {

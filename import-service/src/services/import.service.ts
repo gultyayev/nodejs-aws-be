@@ -1,4 +1,5 @@
 import { S3 } from "aws-sdk";
+import * as csvParser from "csv-parser";
 
 class ImportService {
   static readonly BUCKET_NAME = "import-products-csv-rs-school";
@@ -15,6 +16,60 @@ class ImportService {
     };
 
     return this.#s3.getSignedUrlPromise("putObject", params);
+  }
+
+  async processImportedFile(name: string): Promise<void> {
+    await this.parseCSV(name);
+    await this.moveToParsed(name);
+  }
+
+  private parseCSV(name: string): Promise<void> {
+    const results = [];
+
+    console.log("Start parsing CSV");
+
+    return new Promise<void>((res, rej) => {
+      this.#s3
+        .getObject({
+          Bucket: ImportService.BUCKET_NAME,
+          Key: name,
+        })
+        .createReadStream()
+        .pipe(csvParser())
+        .on("data", (data) => results.push(data))
+        .on("end", () => {
+          console.log("Parse finished!");
+          console.log(results);
+          res();
+        })
+        .on("error", (error) => {
+          console.error("CSV parse error");
+          rej(error);
+        });
+    });
+  }
+
+  private async moveToParsed(name: string): Promise<void> {
+    console.log("Moving file ", name);
+
+    await this.#s3
+      .copyObject({
+        Bucket: ImportService.BUCKET_NAME,
+        CopySource: ImportService.BUCKET_NAME + "/" + name,
+        Key: name.replace("uploaded", "parsed"),
+      })
+      .promise();
+
+    console.log("File copied to ", name.replace("uploaded", "parsed"));
+
+    await this.#s3
+      .deleteObject({
+        Bucket: ImportService.BUCKET_NAME,
+        Key: name,
+      })
+      .promise();
+
+    console.log("Old file deleted ", name);
   }
 }
 
