@@ -1,5 +1,8 @@
+import { ProductDto } from "@libs/dtos/product.dto";
 import { S3 } from "aws-sdk";
+import { validateSync, ValidationError } from "class-validator";
 import * as csvParser from "csv-parser";
+import queueService from "./queue.service";
 
 class ImportService {
   static readonly BUCKET_NAME = "import-products-csv-rs-school";
@@ -19,16 +22,54 @@ class ImportService {
   }
 
   async processImportedFile(name: string): Promise<void> {
-    await this.parseCSV(name);
+    const data: unknown[] = await this.parseCSV(name);
+    const validationErrors: ValidationError[][] | null = this.validateProducts(
+      data as ProductDto[]
+    );
+
+    if (validationErrors) {
+      console.log(`Validation failed for file ${name}`, validationErrors);
+
+      queueService.addToQueue({
+        success: false,
+        message: `Validation failed for file ${name}`,
+      });
+
+      return;
+    }
+
     await this.moveToParsed(name);
+
+    const productNames: string = (data as ProductDto[])
+      .map((product) => `"${product.title}"`)
+      .join(", ");
+
+    queueService.addToQueue({
+      success: false,
+      message: `Successfully added products to the DB ${productNames}`,
+    });
   }
 
-  private parseCSV(name: string): Promise<void> {
+  private validateProducts(data: ProductDto[]): ValidationError[][] | null {
+    let hasErrors = false;
+    const validationErrors = data.map((data) => {
+      const dtoInstance: ProductDto = new ProductDto(data);
+      const errors: ValidationError[] = validateSync(dtoInstance);
+
+      if (errors.length) hasErrors = true;
+
+      return errors;
+    });
+
+    return hasErrors ? validationErrors : null;
+  }
+
+  private parseCSV(name: string): Promise<unknown[]> {
     const results = [];
 
     console.log("Start parsing CSV");
 
-    return new Promise<void>((res, rej) => {
+    return new Promise<unknown[]>((res, rej) => {
       this.#s3
         .getObject({
           Bucket: ImportService.BUCKET_NAME,
@@ -38,9 +79,8 @@ class ImportService {
         .pipe(csvParser())
         .on("data", (data) => results.push(data))
         .on("end", () => {
-          console.log("Parse finished!");
-          console.log(results);
-          res();
+          console.log("Parse finished!", results);
+          res(results);
         })
         .on("error", (error) => {
           console.error("CSV parse error");
