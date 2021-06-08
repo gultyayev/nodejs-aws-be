@@ -8,6 +8,10 @@ import importService from "../../services/import.service";
 
 const hello: ValidatedEventAPIGatewayProxyEvent<any> = (event) =>
   tryCatch(async () => {
+    if (!event.queryStringParameters?.name) {
+      return new ResponseBuilder().setStatusCode(400);
+    }
+
     const url = await importService.getSignedUrl(
       event.queryStringParameters.name
     );

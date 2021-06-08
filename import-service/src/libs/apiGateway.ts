@@ -8,13 +8,6 @@ interface ErrorResponseBody {
   error?: string;
 }
 
-export const formatJSONResponse = (response: Record<string, unknown>) => {
-  return {
-    statusCode: 200,
-    body: JSON.stringify(response)
-  }
-}
-
 export class ResponseBuilder<T = ErrorResponseBody> {
   #response: APIGatewayProxyResult = {
     body: null,
