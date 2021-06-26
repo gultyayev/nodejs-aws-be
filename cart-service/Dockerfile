@@ -9,7 +9,8 @@ RUN npm prune --production
 RUN /usr/local/bin/node-prune
 
 
-FROM node:lts-slim
+FROM alpine:latest
+RUN apk add --update --no-cache nodejs
 WORKDIR /app
 ENV NODE_ENV production
 COPY --from=build app/dist .
