@@ -4,9 +4,7 @@ WORKDIR /app
 COPY package*.json .
 RUN npm i
 COPY . .
-RUN npm run build
-RUN npm prune --production
-RUN /usr/local/bin/node-prune
+RUN npm run build && npm prune --production && /usr/local/bin/node-prune
 
 
 FROM alpine:latest
